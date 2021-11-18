@@ -1,0 +1,19 @@
+{
+  "name": "image-swiper-demo",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite ./demo",
+    "demo": "vite build ./demo",
+    "publish": "cd ./src && npm publish"
+  },
+  "dependencies": {
+    "image-swiper": "file:src",
+    "vue": "^3.2.16"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^1.9.3",
+    "typescript": "^4.4.3",
+    "vite": "^2.6.4",
+    "vue-tsc": "^0.3.0"
+  }
+}

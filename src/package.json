@@ -1,0 +1,29 @@
+{
+  "name": "image-swiper",
+  "version": "0.1.0",
+  "description": "An image viewer with smooth enter and exit transitions, supports lazy-load and gesture control.",
+  "jsnext:main": "./image-viewer-vue.ts",
+  "module": "./image-viewer-vue.ts",
+  "main": "./image-viewer-vue.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Edsuns/image-swiper.git"
+  },
+  "keywords": [
+    "image-viewer",
+    "image",
+    "gallery",
+    "lazy-load",
+    "swiper",
+    "vue3"
+  ],
+  "author": "Edsuns@qq.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Edsuns/image-swiper/issues"
+  },
+  "homepage": "https://github.com/Edsuns/image-swiper#readme",
+  "dependencies": {
+    "swiper": "^7.2.0"
+  }
+}
