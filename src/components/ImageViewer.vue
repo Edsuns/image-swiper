@@ -146,16 +146,12 @@ export default defineComponent({
       // 受限于原图的尺寸不是预知的，这个方案是个妥协，它没能覆盖显示异常的全部情况
       // TODO: 适配是lazy-load且为宽屏的情况
       if (!img.naturalWidth && !photos[swiper.activeIndex].dataSrc) {
-        if (delayCount === 1) {
-          // 先显示出来但背景为全透明中间是圆圈进度条
-          swiper.el.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-          swiper.el.style.zIndex = '999';
-          swiper.el.style.visibility = 'visible';
-        }
         if (delayCount >= 10) {
           // 加载DOM超过100ms，放弃动画，直接显示
           img.style.transform = '';
           swiper.el.style.backgroundColor = '';
+          swiper.el.style.zIndex = '999';
+          swiper.el.style.visibility = 'visible';
           return;
         }
         delay.timeout(() => animateShow(swiper, photos, callback, ++delayCount), 10);
