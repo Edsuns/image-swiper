@@ -193,11 +193,11 @@ export default defineComponent({
       delay.timeout(() => {
         aThumbParent.style.zIndex = '1000';
         aThumbParent.style.visibility = 'visible';
-        aThumb.style.transition = 'all .2s ease-in-out';
+        aThumb.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
         aThumb.style.transform = '';
 
-        img.style.transition = 'all .2s ease-in-out';
-        swiper.el.style.transition = 'all .2s ease-in-out';
+        img.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
+        swiper.el.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
         img.style.transform = '';
         swiper.el.style.backgroundColor = '';
         from.style.visibility = 'hidden';
@@ -212,7 +212,7 @@ export default defineComponent({
         aThumb.style.width = '';
         aThumb.style.height = '';
         callback && callback();
-      }, 300);
+      }, 350);
     }
     const animateHide = (swiper: Swiper, photos: Photo[], callback: () => void) => {
       const imgEls = swiper.wrapperEl.getElementsByTagName('img');
@@ -228,8 +228,8 @@ export default defineComponent({
       const dX = (toBounds.x + toBounds.width / 2) - (swiper.el.clientWidth / 2);
       const dY = (toBounds.y + toBounds.height / 2) - (swiper.el.clientHeight / 2);
 
-      img.style.transition = 'all .2s ease-in-out';
-      swiper.el.style.transition = 'all .2s ease-in-out';
+      img.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
+      swiper.el.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
 
       img.style.transform = 'translate(' + dX + 'px, ' + dY + 'px)' + ' scale(' + scaleX + ',' + scaleY + ')';
       swiper.el.style.backgroundColor = 'rgba(0, 0, 0, 0)';
@@ -242,7 +242,7 @@ export default defineComponent({
         swiper.el.style.zIndex = '-999';
         swiper.el.style.visibility = 'hidden';
         callback();
-      }, 200);
+      }, 250);
     }
     const animateCancelled = (swiper: Swiper) => {
       const imgEls = swiper.wrapperEl.getElementsByTagName('img');
@@ -250,14 +250,14 @@ export default defineComponent({
 
       swiper.pagination.el.classList.remove('swiper-pagination-hidden');
 
-      img.style.transition = 'all .2s ease-in-out';
-      swiper.el.style.transition = 'all .2s ease-in-out';
+      img.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
+      swiper.el.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
       img.style.transform = '';
       swiper.el.style.backgroundColor = '';
       setTimeout(() => {
         img.style.transition = '';
         swiper.el.style.transition = '';
-      }, 200);
+      }, 250);
     }
 
     let moveOpposite = false;
@@ -323,6 +323,7 @@ export default defineComponent({
       moveOpposite = true;
       // ev.target可能传入的是pagination-bullets元素，所以target必须用onTouchStart记录的值
       if (target === null || getIdentifier(ev) !== identifier) { return; }
+      ev.preventDefault();// 消耗掉该事件
       emit('swipeStarted', ev);
       const { pageX, pageY } = getPageXY(ev);
       const el = target;
@@ -415,7 +416,7 @@ export default defineComponent({
 }
 
 .swiper-pagination {
-  transition: all 0.2s ease-in-out;
+  transition: all 0.25s cubic-bezier(.4,0,.22,1);
 }
 
 .swiper-pagination-hidden {
