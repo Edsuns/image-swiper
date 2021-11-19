@@ -17,7 +17,7 @@
     <swiper-slide v-for="(p, i) in photos" :key="i">
       <div class="swiper-zoom-container">
         <!-- Required swiper-lazy class and image source specified in data-src attribute -->
-        <img :data-src="p.dataSrc" class="swiper-lazy" />
+        <img :data-src="p.dataSrc || p.src" class="swiper-lazy" />
         <!-- Preloader image -->
         <div class="swiper-lazy-preloader swiper-lazy-preloader-white"></div>
       </div>
@@ -50,6 +50,7 @@ export interface Open {
 
 interface Photo {
   thumb: HTMLImageElement
+  src: string
   dataSrc: string
 }
 
@@ -83,7 +84,7 @@ export default defineComponent({
   props: {
     open: {
       type: Object as PropType<Open>,
-      default: () => ({ el: null })
+      required: true,
     },
   },
   emits: {
@@ -114,20 +115,21 @@ export default defineComponent({
 
     const getImg = (el: HTMLElement) => el.tagName === 'IMG' ? el : el.getElementsByTagName('img')[0];
     const loadPhotos = (openEl: HTMLElement, parent: HTMLElement | null): number => {
-      if (!parent) { throw new Error('No gallery attribute!'); }
+      if (!parent) { throw new Error('No `gallery` attribute found!'); }
       if (parent.hasAttribute('gallery')) {
         const ps: Photo[] = [];
         const initEl = getImg(openEl);
         let initIndex = 0;
         thumbs = parent.getElementsByTagName('img');
         for (let i = 0; i < thumbs.length; i++) {
-          let img = thumbs[i];
-          if (initEl === img) {
+          let thumb = thumbs[i];
+          if (initEl === thumb) {
             initIndex = i;
           }
-          let data = img.getAttribute('data-src') || img.getAttribute('src');
-          if (!data) { throw new Error('No data-src or src!') }
-          ps.push({ thumb: img, dataSrc: data });
+          let src = thumb.getAttribute('src');
+          let dataSrc = thumb.getAttribute('data-src') || '';
+          if (!src) { throw new Error('No `src` attribute found!') }
+          ps.push({ thumb, src, dataSrc });
         }
         photos.value = ps;
         animateThumbSrc.value = thumbs[initIndex].src;
@@ -140,13 +142,20 @@ export default defineComponent({
       const imgEls = swiper.wrapperEl.getElementsByTagName('img');
       const img = imgEls[swiper.activeIndex];
       const delay = new DelayQueue('animateShow');
-      if (!img.naturalWidth) {
+      // 非lazy-load图片的DOM未加载完成时，等待加载完成
+      // 受限于原图的尺寸不是预知的，这个方案是个妥协，它没能覆盖显示异常的全部情况
+      // TODO: 适配是lazy-load且为宽屏的情况
+      if (!img.naturalWidth && !photos[swiper.activeIndex].dataSrc) {
+        if (delayCount === 1) {
+          // 先显示出来但背景为全透明中间是圆圈进度条
+          swiper.el.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+          swiper.el.style.zIndex = '999';
+          swiper.el.style.visibility = 'visible';
+        }
         if (delayCount >= 10) {
           // 加载DOM超过100ms，放弃动画，直接显示
           img.style.transform = '';
           swiper.el.style.backgroundColor = '';
-          swiper.el.style.zIndex = '999';
-          swiper.el.style.visibility = 'visible';
           return;
         }
         delay.timeout(() => animateShow(swiper, photos, callback, ++delayCount), 10);
@@ -177,6 +186,12 @@ export default defineComponent({
       if (originScale) {
         aThumb.style.width = img.naturalWidth + 'px';
         aThumb.style.height = img.naturalHeight + 'px';
+      } else {
+        if (fitY) {
+          aThumb.style.height = '100%';
+        } else {
+          aThumb.style.width = '100%';
+        }
       }
 
       delay.timeout(() => {
@@ -426,7 +441,5 @@ export default defineComponent({
 
 .animate-thumb > img {
   margin: auto;
-  max-width: 100%;
-  max-height: 100%;
 }
 </style>
