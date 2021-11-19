@@ -145,6 +145,8 @@ export default defineComponent({
           // 加载DOM超过100ms，放弃动画，直接显示
           img.style.transform = '';
           swiper.el.style.backgroundColor = '';
+          swiper.el.style.zIndex = '999';
+          swiper.el.style.visibility = 'visible';
           return;
         }
         delay.timeout(() => animateShow(swiper, photos, callback, ++delayCount), 10);
@@ -152,10 +154,12 @@ export default defineComponent({
       }
       const from = photos[swiper.activeIndex].thumb;
       const fromBounds = from.getBoundingClientRect();
+      const fitY = img.naturalWidth / img.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
       // img.naturalWidth和img.naturalHeight可能由于原图未加载而为0，为0则用thumb的naturalWidth和naturalHeight代替
-      const originScale = img.naturalWidth && swiper.el.clientWidth > img.naturalWidth;
-      const scaleX = fromBounds.width / (originScale ? img.naturalWidth : swiper.el.clientWidth);
-      const dividerY = img.naturalHeight ? (swiper.el.clientWidth / img.naturalWidth) * img.naturalHeight : (swiper.el.clientWidth / from.naturalWidth) * from.naturalHeight;
+      const originScale = img.naturalWidth && swiper.el.clientWidth > img.naturalWidth && swiper.el.clientHeight > img.naturalHeight;
+      const dividerX = !fitY ? swiper.el.clientWidth : img.naturalWidth ? (swiper.el.clientHeight / img.naturalHeight) * img.naturalWidth : (swiper.el.clientHeight / from.naturalHeight) * from.naturalWidth;
+      const dividerY = fitY ? swiper.el.clientHeight : img.naturalHeight ? (swiper.el.clientWidth / img.naturalWidth) * img.naturalHeight : (swiper.el.clientWidth / from.naturalWidth) * from.naturalHeight;
+      const scaleX = fromBounds.width / (originScale ? img.naturalWidth : dividerX);
       const scaleY = fromBounds.height / (originScale ? img.naturalHeight : dividerY);
       const dX = (fromBounds.x + fromBounds.width / 2) - (swiper.el.clientWidth / 2);
       const dY = (fromBounds.y + fromBounds.height / 2) - (swiper.el.clientHeight / 2);
@@ -204,9 +208,12 @@ export default defineComponent({
       const img = imgEls[swiper.activeIndex];
       const to = photos[swiper.activeIndex].thumb;
       const toBounds = to.getBoundingClientRect();
-      const originScale = swiper.el.clientWidth > img.naturalWidth;
-      const scaleX = toBounds.width / (originScale ? img.naturalWidth : swiper.el.clientWidth);
-      const scaleY = toBounds.height / (originScale ? img.naturalHeight : (swiper.el.clientWidth / img.naturalWidth) * img.naturalHeight);
+      const fitY = img.naturalWidth / img.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
+      const originScale = img.naturalWidth && swiper.el.clientWidth > img.naturalWidth && swiper.el.clientHeight > img.naturalHeight;
+      const dividerX = !fitY ? swiper.el.clientWidth : (swiper.el.clientHeight / img.naturalHeight) * img.naturalWidth;
+      const dividerY = fitY ? swiper.el.clientHeight : (swiper.el.clientWidth / img.naturalWidth) * img.naturalHeight;
+      const scaleX = toBounds.width / (originScale ? img.naturalWidth : dividerX);
+      const scaleY = toBounds.height / (originScale ? img.naturalHeight : dividerY);
       const dX = (toBounds.x + toBounds.width / 2) - (swiper.el.clientWidth / 2);
       const dY = (toBounds.y + toBounds.height / 2) - (swiper.el.clientHeight / 2);
 
@@ -361,9 +368,10 @@ export default defineComponent({
         const initIndex = loadPhotos(el, el.parentElement);
         swiper.updateSlides();
         swiper.slideTo(initIndex, 0, false);
-        document.body.style.overflow = 'hidden';
         const delay = new DelayQueue('open');
-        delay.timeout(() => animateShow(swiper, photos.value), 0);
+        delay.timeout(() =>
+          animateShow(swiper, photos.value, () => document.body.style.overflow = 'hidden'),
+          0);
         delay.timeout(() => swiper.lazy.load(), 1);
       }
     })
@@ -389,9 +397,9 @@ export default defineComponent({
   z-index: -999;
   visibility: hidden;
   top: 0;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
   background: #000;
 }
 
@@ -408,9 +416,9 @@ export default defineComponent({
   z-index: -1000;
   visibility: hidden;
   top: 0;
+  bottom: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
   display: flex;
   align-items: center;
   text-align: center;
@@ -418,6 +426,7 @@ export default defineComponent({
 
 .animate-thumb > img {
   margin: auto;
-  width: 100%;
+  max-width: 100%;
+  max-height: 100%;
 }
 </style>
