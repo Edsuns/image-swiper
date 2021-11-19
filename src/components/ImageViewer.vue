@@ -159,7 +159,7 @@ export default defineComponent({
       }
       const from = photos[swiper.activeIndex].thumb;
       const fromBounds = from.getBoundingClientRect();
-      const fitY = img.naturalWidth / img.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
+      const fitY = from.naturalWidth / from.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
       // img.naturalWidth和img.naturalHeight可能由于原图未加载而为0，为0则用thumb的naturalWidth和naturalHeight代替
       const originScale = img.naturalWidth && swiper.el.clientWidth > img.naturalWidth && swiper.el.clientHeight > img.naturalHeight;
       const dividerX = !fitY ? swiper.el.clientWidth : img.naturalWidth ? (swiper.el.clientHeight / img.naturalHeight) * img.naturalWidth : (swiper.el.clientHeight / from.naturalHeight) * from.naturalWidth;
