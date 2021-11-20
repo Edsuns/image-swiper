@@ -1,7 +1,4 @@
 <template>
-  <div class="animate-thumb">
-    <img ref="animateThumb" :src="animateThumbSrc" />
-  </div>
   <swiper
     :style="style"
     :lazy="true"
@@ -16,6 +13,7 @@
   >
     <swiper-slide v-for="(p, i) in photos" :key="i">
       <div class="swiper-zoom-container">
+        <img :src="photos[i].src" class="animate-thumb" />
         <!-- Required swiper-lazy class and image source specified in data-src attribute -->
         <img :data-src="p.dataSrc || p.src" class="swiper-lazy" />
         <!-- Preloader image -->
@@ -99,10 +97,9 @@ export default defineComponent({
       '--swiper-pagination-bullet-inactive-color': '#8E8E93',
       '--swiper-pagination-bullet-inactive-opacity': '.5',
     };
-    const animateThumb = ref<HTMLImageElement>();
-    const animateThumbSrc = ref('');
     const photos = ref<Photo[]>([]);
     let thumbs: HTMLCollectionOf<HTMLImageElement>;
+    let observer: MutationObserver | null = null;
 
     // 不监听`activeIndexChange`事件，因为显示时会调用slideTo从而触发一次该事件，这会导致thumb元素闪烁
     let lastIndex = 0;
@@ -113,7 +110,7 @@ export default defineComponent({
       lastIndex = currentIndex;
     }
 
-    const getImg = (el: HTMLElement) => el.tagName === 'IMG' ? el : el.getElementsByTagName('img')[0];
+    const getImg = (el: HTMLElement) => el.tagName === 'IMG' ? el : el.getElementsByTagName('img')[1];
     const loadPhotos = (openEl: HTMLElement, parent: HTMLElement | null): number => {
       if (!parent) { throw new Error('No `gallery` attribute found!'); }
       if (parent.hasAttribute('gallery')) {
@@ -132,15 +129,14 @@ export default defineComponent({
           ps.push({ thumb, src, dataSrc });
         }
         photos.value = ps;
-        animateThumbSrc.value = thumbs[initIndex].src;
         lastIndex = initIndex;
         return initIndex;
       }
       return loadPhotos(openEl, parent.parentElement);
     }
     const animateShow = (swiper: Swiper, photos: Photo[], callback?: () => void, delayCount: number = 1) => {
-      const imgEls = swiper.wrapperEl.getElementsByTagName('img');
-      const img = imgEls[swiper.activeIndex];
+      const imgEls = swiper.wrapperEl.querySelectorAll('img.swiper-lazy');
+      const img = imgEls[swiper.activeIndex] as HTMLImageElement;
       const delay = new DelayQueue('animateShow');
       // 非lazy-load图片的DOM未加载完成时，等待加载完成
       // 受限于原图的尺寸不是预知的，这个方案是个妥协，它没能覆盖显示异常的全部情况
@@ -176,8 +172,7 @@ export default defineComponent({
 
       swiper.pagination.el.classList.remove('swiper-pagination-hidden');
 
-      const aThumb = animateThumb.value as HTMLImageElement;
-      const aThumbParent = aThumb.parentElement as HTMLDivElement;
+      const aThumb = img.parentElement?.querySelector('img.animate-thumb') as HTMLImageElement;
       aThumb.style.transform = 'translate(' + dX + 'px, ' + dY + 'px)' + ' scale(' + scaleX + ',' + scaleY + ')';
       if (originScale) {
         aThumb.style.width = img.naturalWidth + 'px';
@@ -189,13 +184,11 @@ export default defineComponent({
           aThumb.style.width = '100%';
         }
       }
+      aThumb.style.display = 'inline';
+      aThumb.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
+      delay.timeout(() => aThumb.style.transform = '', 100);
 
       delay.timeout(() => {
-        aThumbParent.style.zIndex = '1000';
-        aThumbParent.style.visibility = 'visible';
-        aThumb.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
-        aThumb.style.transform = '';
-
         img.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
         swiper.el.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
         img.style.transform = '';
@@ -206,17 +199,40 @@ export default defineComponent({
         img.style.transition = '';
         swiper.el.style.transition = '';
 
-        aThumb.style.transition = '';
-        aThumbParent.style.zIndex = '';
-        aThumbParent.style.visibility = 'hidden';
-        aThumb.style.width = '';
-        aThumb.style.height = '';
+        const hideAnimateThumb = () => {
+          aThumb.style.display = '';
+          aThumb.style.transition = '';
+          aThumb.style.width = '';
+          aThumb.style.height = '';
+        }
+        // 在`.swiper-lazy-preloader`消失后再隐藏animate-thumb
+        const preloaderEl = img.parentElement?.querySelector('.swiper-lazy+.swiper-lazy-preloader')
+        if (img.parentElement && preloaderEl) {
+          observer?.disconnect();
+          observer = new MutationObserver((mutationsList, observer) => {
+            for (let mutations of mutationsList) {
+              let removedNodes = mutations.removedNodes;
+              for (let i = 0; i < removedNodes.length; i++) {
+                let removed = removedNodes[i] as Element;
+                if (removed.classList.contains('swiper-lazy-preloader')) {
+                  hideAnimateThumb();
+                  observer.disconnect();
+                  return;
+                }
+              }
+            }
+          });
+          observer.observe(img.parentElement, { childList: true });
+        } else {
+          hideAnimateThumb();
+        }
+
         callback && callback();
       }, 350);
     }
     const animateHide = (swiper: Swiper, photos: Photo[], callback: () => void) => {
-      const imgEls = swiper.wrapperEl.getElementsByTagName('img');
-      const img = imgEls[swiper.activeIndex];
+      const imgEls = swiper.wrapperEl.querySelectorAll('img.swiper-lazy');
+      const img = imgEls[swiper.activeIndex] as HTMLImageElement;
       const to = photos[swiper.activeIndex].thumb;
       const toBounds = to.getBoundingClientRect();
       const fitY = img.naturalWidth / img.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
@@ -365,7 +381,6 @@ export default defineComponent({
         animateHide(s, photos.value, () => {
           photos.value = [];
           props.open.el = null;
-          animateThumbSrc.value = '';
           thumbs = {} as HTMLCollectionOf<HTMLImageElement>;
           document.body.style.overflow = '';
           log('swipeExited', s.activeIndex)
@@ -390,8 +405,6 @@ export default defineComponent({
 
     return {
       style,
-      animateThumb,
-      animateThumbSrc,
       photos,
       onClick: () => swiper.pagination.el.classList.toggle('swiper-pagination-hidden'),
       onTouchStart,
@@ -423,20 +436,8 @@ export default defineComponent({
   visibility: hidden;
 }
 
-.animate-thumb {
-  position: fixed;
-  z-index: -1000;
-  visibility: hidden;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  display: flex;
-  align-items: center;
-  text-align: center;
-}
-
-.animate-thumb > img {
-  margin: auto;
+img.animate-thumb {
+  position: absolute;
+  display: none;
 }
 </style>
