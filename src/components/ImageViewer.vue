@@ -111,6 +111,7 @@ export default defineComponent({
     }
 
     const getImg = (el: HTMLElement) => el.tagName === 'IMG' ? el : el.getElementsByTagName('img')[1];
+    const getActiveImg = (swiper: Swiper) => swiper.wrapperEl.querySelectorAll('img.swiper-lazy')[swiper.activeIndex] as HTMLImageElement;
     const loadPhotos = (openEl: HTMLElement, parent: HTMLElement | null): number => {
       if (!parent) { throw new Error('No `gallery` attribute found!'); }
       if (parent.hasAttribute('gallery')) {
@@ -135,8 +136,7 @@ export default defineComponent({
       return loadPhotos(openEl, parent.parentElement);
     }
     const animateShow = (swiper: Swiper, photos: Photo[], callback?: () => void, delayCount: number = 1) => {
-      const imgEls = swiper.wrapperEl.querySelectorAll('img.swiper-lazy');
-      const img = imgEls[swiper.activeIndex] as HTMLImageElement;
+      const img = getActiveImg(swiper);
       const delay = new DelayQueue('animateShow');
       // 非lazy-load图片的DOM未加载完成时，等待加载完成
       // 受限于原图的尺寸不是预知的，这个方案是个妥协，它没能覆盖显示异常的全部情况
@@ -231,8 +231,7 @@ export default defineComponent({
       }, 350);
     }
     const animateHide = (swiper: Swiper, photos: Photo[], callback: () => void) => {
-      const imgEls = swiper.wrapperEl.querySelectorAll('img.swiper-lazy');
-      const img = imgEls[swiper.activeIndex] as HTMLImageElement;
+      const img = getActiveImg(swiper);
       const to = photos[swiper.activeIndex].thumb;
       const toBounds = to.getBoundingClientRect();
       const fitY = img.naturalWidth / img.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
@@ -261,8 +260,7 @@ export default defineComponent({
       }, 250);
     }
     const animateCancelled = (swiper: Swiper) => {
-      const imgEls = swiper.wrapperEl.getElementsByTagName('img');
-      const img = imgEls[swiper.activeIndex];
+      const img = getActiveImg(swiper);
 
       swiper.pagination.el.classList.remove('swiper-pagination-hidden');
 
