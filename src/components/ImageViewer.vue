@@ -99,7 +99,6 @@ export default defineComponent({
     };
     const photos = ref<Photo[]>([]);
     let thumbs: HTMLCollectionOf<HTMLImageElement>;
-    let observer: MutationObserver | null = null;
 
     // 不监听`activeIndexChange`事件，因为显示时会调用slideTo从而触发一次该事件，这会导致thumb元素闪烁
     let lastIndex = 0;
@@ -186,6 +185,7 @@ export default defineComponent({
       }
       aThumb.style.display = 'inline';
       aThumb.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
+      // 必须分开成两次100ms的timeout
       delay.timeout(() => aThumb.style.transform = '', 100);
 
       delay.timeout(() => {
@@ -208,8 +208,7 @@ export default defineComponent({
         // 在`.swiper-lazy-preloader`消失后再隐藏animate-thumb
         const preloaderEl = img.parentElement?.querySelector('.swiper-lazy+.swiper-lazy-preloader')
         if (img.parentElement && preloaderEl) {
-          observer?.disconnect();
-          observer = new MutationObserver((mutationsList, observer) => {
+          const observer = new MutationObserver((mutationsList, observer) => {
             for (let mutations of mutationsList) {
               let removedNodes = mutations.removedNodes;
               for (let i = 0; i < removedNodes.length; i++) {
