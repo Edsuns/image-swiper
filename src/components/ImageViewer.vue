@@ -12,8 +12,8 @@
     @touchMoveOpposite="onTouchMoveOpposite"
   >
     <swiper-slide v-for="(p, i) in photos" :key="i">
+      <img :src="photos[i].src" class="animate-thumb" />
       <div class="swiper-zoom-container">
-        <img :src="photos[i].src" class="animate-thumb" />
         <!-- Required swiper-lazy class and image source specified in data-src attribute -->
         <img :data-src="p.dataSrc || p.src" class="swiper-lazy" />
         <!-- Preloader image -->
@@ -171,7 +171,7 @@ export default defineComponent({
 
       swiper.pagination.el.classList.remove('swiper-pagination-hidden');
 
-      const aThumb = img.parentElement?.querySelector('img.animate-thumb') as HTMLImageElement;
+      const aThumb = swiper.el.querySelector('.swiper-slide-active>img.animate-thumb') as HTMLImageElement;
       aThumb.style.transform = 'translate(' + dX + 'px, ' + dY + 'px)' + ' scale(' + scaleX + ',' + scaleY + ')';
       if (originScale) {
         aThumb.style.width = img.naturalWidth + 'px';
@@ -321,7 +321,7 @@ export default defineComponent({
     const onTouchStart = (s: Swiper, ev: PointerEvent | MouseEvent | TouchEvent) => {
       log('onTouchStart')
       moveOpposite = false;
-      if (target !== null || identifier > -1) { return; }
+      if (target !== null || identifier > -1 || s.zoom.scale !== 1) { return; }
       identifier = getIdentifier(ev);
       const { pageX, pageY } = getPageXY(ev);
       const event = ev as any;
@@ -335,7 +335,7 @@ export default defineComponent({
       log('onTouchMoveOpposite');
       moveOpposite = true;
       // ev.target可能传入的是pagination-bullets元素，所以target必须用onTouchStart记录的值
-      if (target === null || getIdentifier(ev) !== identifier) { return; }
+      if (target === null || getIdentifier(ev) !== identifier || s.zoom.scale !== 1) { return; }
       ev.preventDefault();// 消耗掉该事件
       emit('swipeStarted', ev);
       const { pageX, pageY } = getPageXY(ev);
@@ -366,7 +366,7 @@ export default defineComponent({
       if (target === null || getIdentifier(ev) !== identifier) { return; }
       identifier = -1;
       target = null;
-      if (!moveOpposite) { return; }
+      if (!moveOpposite || s.zoom.scale !== 1) { return; }
 
       if ((lastDirection > 0) != (direction > 0) || Math.abs(direction) < 80) {
         animateCancelled(s);
@@ -433,8 +433,20 @@ export default defineComponent({
   visibility: hidden;
 }
 
-img.animate-thumb {
+.swiper-slide {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+.swiper-slide > img {
   position: absolute;
+  max-width: 100%;
+  max-height: 100%;
+  -o-object-fit: contain;
+  object-fit: contain;
+}
+.swiper-slide > img.animate-thumb {
   display: none;
 }
 </style>
