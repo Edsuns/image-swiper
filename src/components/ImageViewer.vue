@@ -156,11 +156,12 @@ export default defineComponent({
         delay.timeout(() => animateShow(swiper, photos, callback, ++delayCount), 10);
         return;
       }
+      const needOriginScale = (img: HTMLImageElement) => img.naturalWidth && swiper.el.clientWidth > img.naturalWidth && swiper.el.clientHeight > img.naturalHeight;
       const from = photos[swiper.activeIndex].thumb;
       const fromBounds = from.getBoundingClientRect();
       const fitY = from.naturalWidth / from.naturalHeight < swiper.el.clientWidth / swiper.el.clientHeight;
       // img.naturalWidth和img.naturalHeight可能由于原图未加载而为0，为0则用thumb的naturalWidth和naturalHeight代替
-      const originScale = img.naturalWidth && swiper.el.clientWidth > img.naturalWidth && swiper.el.clientHeight > img.naturalHeight;
+      const originScale = needOriginScale(img);
       const dividerX = !fitY ? swiper.el.clientWidth : img.naturalWidth ? (swiper.el.clientHeight / img.naturalHeight) * img.naturalWidth : (swiper.el.clientHeight / from.naturalHeight) * from.naturalWidth;
       const dividerY = fitY ? swiper.el.clientHeight : img.naturalHeight ? (swiper.el.clientWidth / img.naturalWidth) * img.naturalHeight : (swiper.el.clientWidth / from.naturalWidth) * from.naturalHeight;
       const scaleX = fromBounds.width / (originScale ? img.naturalWidth : dividerX);
@@ -189,6 +190,13 @@ export default defineComponent({
       }
       aThumb.style.display = 'inline';
       aThumb.style.transition = 'all .25s cubic-bezier(.4,0,.22,1)';
+      // 在原图加载完成时修正aThumb的尺寸
+      img.onload = () => {
+        if (needOriginScale(img)) {
+          aThumb.style.width = img.naturalWidth + 'px';
+          aThumb.style.height = img.naturalHeight + 'px';
+        }
+      }
       // 必须分开成两次100ms的timeout
       delay.timeout(() => aThumb.style.transform = '', 100);
 
