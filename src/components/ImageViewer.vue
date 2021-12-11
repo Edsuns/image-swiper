@@ -138,7 +138,10 @@ export default defineComponent({
       }
       return loadPhotos(openEl, parent.parentElement);
     }
+    let animating = false;
     const animateShow = (swiper: Swiper, photos: Photo[], callback?: () => void, delayCount: number = 1) => {
+      animating = true;
+
       const img = getActiveImg(swiper);
       const delay = new DelayQueue('animateShow');
       // 非lazy-load图片的DOM未加载完成时，等待加载完成
@@ -238,10 +241,13 @@ export default defineComponent({
           hideAnimateThumb();
         }
 
+        animating = false;
         callback && callback();
       }, 350);
     }
     const animateHide = (swiper: Swiper, photos: Photo[], callback: () => void) => {
+      animating = true;
+
       const img = getActiveImg(swiper);
       const to = photos[swiper.activeIndex].thumb;
       const toBounds = to.getBoundingClientRect();
@@ -267,6 +273,8 @@ export default defineComponent({
         swiper.el.style.transition = '';
         swiper.el.style.zIndex = '-999';
         swiper.el.style.visibility = 'hidden';
+
+        animating = false;
         callback();
       }, 250);
     }
@@ -333,7 +341,7 @@ export default defineComponent({
     const onTouchStart = (s: Swiper, ev: PointerEvent | MouseEvent | TouchEvent) => {
       log('onTouchStart')
       moveOpposite = false;
-      if (target !== null || identifier > -1 || s.zoom.scale !== 1) { return; }
+      if (target !== null || identifier > -1 || s.zoom.scale !== 1 || animating) { return; }
       identifier = getIdentifier(ev);
       const { pageX, pageY } = getPageXY(ev);
       const event = ev as any;
@@ -347,7 +355,7 @@ export default defineComponent({
       log('onTouchMoveOpposite');
       moveOpposite = true;
       // ev.target可能传入的是pagination-bullets元素，所以target必须用onTouchStart记录的值
-      if (target === null || getIdentifier(ev) !== identifier || s.zoom.scale !== 1) { return; }
+      if (target === null || getIdentifier(ev) !== identifier || s.zoom.scale !== 1 || animating) { return; }
       ev.preventDefault();// 消耗掉该事件
       emit('swipeStarted', ev);
       const { pageX, pageY } = getPageXY(ev);
@@ -378,7 +386,7 @@ export default defineComponent({
       if (target === null || getIdentifier(ev) !== identifier) { return; }
       identifier = -1;
       target = null;
-      if (!moveOpposite || s.zoom.scale !== 1) { return; }
+      if (!moveOpposite || s.zoom.scale !== 1 || animating) { return; }
 
       if ((lastDirection > 0) != (direction > 0) || Math.abs(direction) < 80) {
         animateCancelled(s);
