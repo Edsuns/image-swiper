@@ -109,7 +109,11 @@ export default defineComponent({
       lastIndex = currentIndex;
     }
 
-    const getImg = (el: HTMLElement) => el.tagName === 'IMG' ? el : el.getElementsByTagName('img')[1];
+    const getImg = (el: HTMLElement) => {
+      if (el.tagName === 'IMG') { return el; }
+      const imgs = el.getElementsByTagName('img');
+      return imgs[imgs.length - 1];
+    }
     const getActiveImg = (swiper: Swiper) => swiper.wrapperEl.querySelectorAll('img.swiper-lazy')[swiper.activeIndex] as HTMLImageElement;
     const loadPhotos = (openEl: HTMLElement, parent: HTMLElement | null): number => {
       if (!parent) { throw new Error('No `gallery` attribute found!'); }
