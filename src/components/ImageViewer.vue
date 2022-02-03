@@ -4,9 +4,10 @@
     :lazy="true"
     :zoom="true"
     :spaceBetween="30"
-    :pagination="{ 'clickable': true, 'dynamicBullets': true }"
+    :pagination="{ 'clickable': true }"
     @swiper="onSwiper"
     @click="onClick"
+    @doubleClick="onDoubleClick"
     @touchStart="onTouchStart"
     @touchEnd="onTouchEnd"
     @touchMoveOpposite="onTouchMoveOpposite"
@@ -89,7 +90,7 @@ export default defineComponent({
     swipeStarted: (ev: PointerEvent | MouseEvent | TouchEvent) => true,
     swipeCancelled: (ev: PointerEvent | MouseEvent | TouchEvent) => true,
     swipeExit: (ev: PointerEvent | MouseEvent | TouchEvent) => true,
-    swipeExited: (ev: PointerEvent | MouseEvent | TouchEvent) => true,
+    swipeExited: () => true,
   },
   setup(props, { emit }) {
     const style = {
@@ -395,15 +396,16 @@ export default defineComponent({
       } else {
         log('swipeExit');
         emit('swipeExit', ev);
-        animateHide(s, photos.value, () => {
-          photos.value = [];
-          props.open.el = null;
-          thumbs = {} as HTMLCollectionOf<HTMLImageElement>;
-          document.body.style.overflow = '';
-          log('swipeExited', s.activeIndex)
-          emit('swipeExited', ev);
-        })
+        animateHide(s, photos.value, onExit)
       }
+    }
+    const onExit = () => {
+      photos.value = [];
+      props.open.el = null;
+      thumbs = {} as HTMLCollectionOf<HTMLImageElement>;
+      document.body.style.overflow = '';
+      log('swipeExited', swiper.activeIndex)
+      emit('swipeExited');
     }
 
     watch(() => props.open.el, (el) => {
@@ -420,10 +422,45 @@ export default defineComponent({
       }
     })
 
+    const singleClickTracker = {
+      timeout: -1,
+      clickCount: 0,
+      enqueue(action: () => void) {
+        this.clickCount++
+        if (this.clickCount >= 2) {
+          this.onDoubleClick()
+          return
+        }
+        this.timeout = setTimeout(() => {
+          action()
+          this.reset()
+        }, 220)
+      },
+      reset() {
+        if (this.timeout > -1) {
+          clearTimeout(this.timeout)
+        }
+        this.timeout = -1
+        this.clickCount = 0
+      },
+      onDoubleClick() {
+        this.reset()
+      },
+    }
+
     return {
       style,
       photos,
-      onClick: () => swiper.pagination.el.classList.toggle('swiper-pagination-hidden'),
+      onClick: (s: Swiper, ev: Event) => {
+        if (s.zoom.scale !== 1) {
+          swiper.pagination.el.classList.toggle('swiper-pagination-hidden')
+        } else {
+          singleClickTracker.enqueue(() => animateHide(swiper, photos.value, onExit))
+        }
+      },
+      onDoubleClick: () => {
+        singleClickTracker.onDoubleClick()
+      },
       onTouchStart,
       onTouchMoveOpposite,
       onTouchEnd,
