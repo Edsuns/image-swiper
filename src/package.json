@@ -24,6 +24,6 @@
   },
   "homepage": "https://github.com/Edsuns/image-swiper#readme",
   "dependencies": {
-    "swiper": "^7.2.0"
+    "swiper": "^7.4.1"
   }
 }
