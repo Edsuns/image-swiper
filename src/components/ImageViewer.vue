@@ -415,10 +415,9 @@ export default defineComponent({
         const initIndex = loadPhotos(el, el.parentElement);
         swiper.updateSlides();
         swiper.slideTo(initIndex, 0, false);
+        document.body.style.overflow = 'hidden'
         const delay = new DelayQueue('open');
-        delay.timeout(() =>
-          animateShow(swiper, photos.value, () => document.body.style.overflow = 'hidden'),
-          0);
+        delay.timeout(() => animateShow(swiper, photos.value), 0);
         delay.timeout(() => swiper.lazy.load(), 1);
       }
     })
