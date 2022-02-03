@@ -76,6 +76,7 @@ class DelayQueue {
 }
 
 export default defineComponent({
+  name: 'image-viewer',
   components: {
     Swiper: SwiperVue,
     SwiperSlide,
