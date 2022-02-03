@@ -426,25 +426,25 @@ export default defineComponent({
       timeout: -1,
       clickCount: 0,
       enqueue(action: () => void) {
-        this.clickCount++
+        this.clickCount++;
         if (this.clickCount >= 2) {
-          this.onDoubleClick()
-          return
+          this.onDoubleClick();
+          return;
         }
         this.timeout = setTimeout(() => {
-          action()
-          this.reset()
+          action();
+          this.reset();
         }, 220)
       },
       reset() {
         if (this.timeout > -1) {
-          clearTimeout(this.timeout)
+          clearTimeout(this.timeout);
         }
-        this.timeout = -1
-        this.clickCount = 0
+        this.timeout = -1;
+        this.clickCount = 0;
       },
       onDoubleClick() {
-        this.reset()
+        this.reset();
       },
     }
 
@@ -453,13 +453,16 @@ export default defineComponent({
       photos,
       onClick: (s: Swiper, ev: Event) => {
         if (s.zoom.scale !== 1) {
-          swiper.pagination.el.classList.toggle('swiper-pagination-hidden')
+          s.pagination.el.classList.toggle('swiper-pagination-hidden');
         } else {
-          singleClickTracker.enqueue(() => animateHide(swiper, photos.value, onExit))
+          singleClickTracker.enqueue(() => {
+            updateThumbsVisibility(s.activeIndex);
+            animateHide(s, photos.value, onExit);
+          })
         }
       },
       onDoubleClick: () => {
-        singleClickTracker.onDoubleClick()
+        singleClickTracker.onDoubleClick();
       },
       onTouchStart,
       onTouchMoveOpposite,
