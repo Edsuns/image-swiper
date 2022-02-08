@@ -24,7 +24,7 @@
   </swiper>
 </template>
 <script lang="ts">
-import { defineComponent, PropType, watch, ref } from 'vue';
+import { defineComponent, PropType, watch, ref, onMounted, onUnmounted } from 'vue';
 // Import Swiper Vue.js components
 import { Swiper as SwiperVue, SwiperSlide } from 'swiper/vue';
 
@@ -85,6 +85,10 @@ export default defineComponent({
     open: {
       type: Object as PropType<Open>,
       required: true,
+    },
+    historyUrl: {
+      type: String,
+      default: '?img'
     },
   },
   emits: {
@@ -397,10 +401,10 @@ export default defineComponent({
       } else {
         log('swipeExit');
         emit('swipeExit', ev);
-        animateHide(s, photos.value, onExit)
+        historyHandler.exit();
       }
     }
-    const onExit = () => {
+    const destroy = () => {
       photos.value = [];
       props.open.el = null;
       thumbs = {} as HTMLCollectionOf<HTMLImageElement>;
@@ -408,6 +412,31 @@ export default defineComponent({
       log('swipeExited', swiper.activeIndex)
       emit('swipeExited');
     }
+
+    const historyHandler = {
+      opened: false,
+      onPopState(ev: PopStateEvent) {
+        if (this.opened) {
+          updateThumbsVisibility(swiper.activeIndex);
+          animateHide(swiper, photos.value, destroy);
+          this.opened = false;
+        }
+      },
+      onImageOpened() {
+        history.pushState('image-viewer', document.title, props.historyUrl);
+        this.opened = true;
+      },
+      exit() {
+        history.back();
+      },
+    }
+    const popstateListener = (ev: PopStateEvent) => historyHandler.onPopState.call(historyHandler, ev)
+    onMounted(() => {
+      window.addEventListener('popstate', popstateListener);
+    })
+    onUnmounted(() => {
+      window.removeEventListener('popstate', popstateListener);
+    })
 
     watch(() => props.open.el, (el) => {
       if (el) {
@@ -419,6 +448,7 @@ export default defineComponent({
         const delay = new DelayQueue('open');
         delay.timeout(() => animateShow(swiper, photos.value), 0);
         delay.timeout(() => swiper.lazy.load(), 1);
+        historyHandler.onImageOpened()
       }
     })
 
@@ -455,10 +485,7 @@ export default defineComponent({
         if (s.zoom.scale !== 1) {
           s.pagination.el.classList.toggle('swiper-pagination-hidden');
         } else {
-          singleClickTracker.enqueue(() => {
-            updateThumbsVisibility(s.activeIndex);
-            animateHide(s, photos.value, onExit);
-          })
+          singleClickTracker.enqueue(historyHandler.exit)
         }
       },
       onDoubleClick: () => {
@@ -473,7 +500,7 @@ export default defineComponent({
 });
 </script>
 
-<style>
+<style scoped>
 .swiper {
   position: fixed;
   z-index: -999;
